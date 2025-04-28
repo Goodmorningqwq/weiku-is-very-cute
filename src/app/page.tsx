@@ -23,7 +23,7 @@ export default function HomePage() {
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Load locked leaderboard and last locked time from localStorage
+  // 1. Load locked leaderboard and last locked time from localStorage
   useEffect(() => {
     const savedLocked = localStorage.getItem('lockedLeaderboard');
     const savedTime = localStorage.getItem('lastLockedTime');
@@ -34,6 +34,13 @@ export default function HomePage() {
       setLastLockedTime(parseInt(savedTime));
     }
   }, []);
+
+  // 2. After loading localStorage, fetch guild data
+  useEffect(() => {
+    if (lastLockedTime !== null) {
+      fetchGuildData();
+    }
+  }, [lastLockedTime]);
 
   // Fetch guild data
   const fetchGuildData = async () => {
@@ -72,9 +79,10 @@ export default function HomePage() {
       const newCurrentLeaderboard: Member[] = Object.values(memberDict).sort((a, b) => b.xp - a.xp);
       setCurrentLeaderboard(newCurrentLeaderboard);
 
-      // Check if 7 days passed
       const now = Date.now();
       const oneWeekMs = 7 * 24 * 60 * 60 * 1000;
+
+      // Check if 7 days have passed
       if (!lastLockedTime || now - lastLockedTime >= oneWeekMs) {
         setLockedLeaderboard(newCurrentLeaderboard);
         localStorage.setItem('lockedLeaderboard', JSON.stringify(newCurrentLeaderboard));
@@ -109,7 +117,6 @@ export default function HomePage() {
       differenceList.sort((a, b) => b.difference - a.difference);
       setDifferenceLeaderboard(differenceList);
 
-      // Set last updated
       setLastUpdatedTime(now);
     } catch (e) {
       if (e instanceof Error) {
@@ -121,11 +128,6 @@ export default function HomePage() {
     }
   };
 
-  // Fetch on mount
-  useEffect(() => {
-    fetchGuildData();
-  }, [lockedLeaderboard.length]);
-
   // Helper: format date
   const formatDate = (timestamp: number | null) => {
     if (!timestamp) return 'Unknown';
@@ -136,25 +138,25 @@ export default function HomePage() {
     <div className="flex flex-col items-center justify-center min-h-screen p-4 bg-gray-900 dark:bg-gray-900" suppressHydrationWarning>
       <div className="w-full max-w-2xl flex flex-col items-center text-center">
         <h1 className="text-4xl font-bold mb-6 text-white dark:text-gray-100">
-          Ruwr Weekly XP LeaderBoard
+          Ruwr members Guild Weekly XP 
         </h1>
-  
+
         <div className="flex flex-col items-center mb-6 text-white dark:text-gray-300 space-y-2">
           <p><strong>Last Weekly Reset:</strong> {formatDate(lastLockedTime)}</p>
           <p><strong>Last Updated:</strong> {formatDate(lastUpdatedTime)}</p>
         </div>
-  
+
         {error && (
           <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
             Error: {error}
           </div>
         )}
-  
+
         {isLoading ? (
           <div className="text-center text-white">Loading...</div>
         ) : (
           <LeaderboardTable
-            title="Weekly XP LeaderBoard"
+            title="Weekly XP Leaderboard"
             data={differenceLeaderboard}
             columns={[
               { key: 'username', label: 'Username' },
@@ -165,5 +167,4 @@ export default function HomePage() {
       </div>
     </div>
   );
-  
 }
