@@ -1,0 +1,186 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import { LeaderboardTable } from '@/component/LeaderboardTable'; //now u see its fixed and we can head to the next problem
+// and the reason it being error here becuase u didnt have the file saaaved, so the function isnt can u let me finishin my typing :<
+// so the function isnt getting recognized by the 
+// the error u see here is mainly cause by they cant find the r"LeaderboardTable " thing in the file
+// why?
+// so thats why i asked the equestion 2 for u tto export it, the reason i say its simple because u can easily find how by reading ur code
+//u see that? how do u have the roll down thing
+// ok so a knowledge for u cuz u prob dont know
+// a root path for a react/nextjs project uses @/
+
+export default function HomePage() {
+  const [isUnlocked, setIsUnlocked] = useState(false);
+  const [currentLeaderboard, setCurrentLeaderboard] = useState([]);
+  const [lockedLeaderboard, setLockedLeaderboard] = useState([]);
+  const [differenceLeaderboard, setDifferenceLeaderboard] = useState([]);
+  const [lastLockedTime, setLastLockedTime] = useState(null);
+  const [error, setError] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
+
+  // Load locked leaderboard and last locked time from localStorage on mount
+  useEffect(() => {
+    const savedLocked = localStorage.getItem('lockedLeaderboard');
+    const savedTime = localStorage.getItem('lastLockedTime');
+    if (savedLocked) {
+      setLockedLeaderboard(JSON.parse(savedLocked));
+    }
+    if (savedTime) {
+      setLastLockedTime(new Date(parseInt(savedTime)).toLocaleString());
+    }
+  }, []);
+  
+  //u see its failed to fetch right?
+  // so we need to figure out the reason
+  //here we see its getting cors error
+  // what is a cors?
+  // in a short words, its like, u cant make user request the api directly from browser
+  // so how do i usually fix this is, making a local endpoint of server for the api to redirect
+  //ok so all the errors beleow are about incautious type definition, we can fix it lateron, lets check if the site is working now
+  const fetchGuildData = async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const response = await fetch('/api/guild');
+      if (!response.ok) {
+        throw new Error('API call failed');
+      }
+      const data = await response.json();
+      const members = data.members;
+      if (!members || members.total === 0) {
+        throw new Error('No members found in guild');
+      }
+      // 
+      // Process members, handling duplicates
+      const memberDict = {};
+      const ranks = ['owner', 'chief', 'strategist', 'captain', 'recruiter', 'recruit'];
+      ranks.forEach((rank) => {
+        if (members[rank]) {
+          Object.keys(members[rank]).forEach((memberKey) => {
+            const memberData = members[rank][memberKey];
+            const username = memberData[memberKey] || memberKey;
+            const xp = Number(memberData.contributed) || 0;
+            if (memberDict[username]) {
+              console.warn(`Duplicate username ${username}: ${memberDict[username].xp}, ${xp}`);
+              memberDict[username].xp = Math.max(memberDict[username].xp, xp);
+            } else {
+              memberDict[username] = { username, xp };
+            }
+          });
+        }
+      });
+
+      // Convert to array and sort by XP descending
+      const newCurrentLeaderboard = Object.values(memberDict).sort((a, b) => b.xp - a.xp);
+      setCurrentLeaderboard(newCurrentLeaderboard);
+
+      // Update locked leaderboard if unlocked
+      if (isUnlocked) {
+        setLockedLeaderboard(newCurrentLeaderboard);
+        localStorage.setItem('lockedLeaderboard', JSON.stringify(newCurrentLeaderboard));
+        const currentTime = Date.now();
+        setLastLockedTime(new Date(currentTime).toLocaleString());
+        localStorage.setItem('lastLockedTime', currentTime.toString());
+      }
+
+      // Calculate difference leaderboard
+      const lockedDict = {};
+      lockedLeaderboard.forEach((member) => {
+        lockedDict[member.username] = member.xp;
+      });
+
+      const differenceList = [];
+      newCurrentLeaderboard.forEach((member) => {
+        const lockedXP = lockedDict[member.username] || 0;
+        differenceList.push({
+          username: member.username,
+          difference: member.xp - lockedXP,
+        });
+      });
+
+      // Include members only in locked leaderboard
+      lockedLeaderboard.forEach((member) => {
+        if (!memberDict[member.username]) {
+          differenceList.push({
+            username: member.username,
+            difference: -member.xp,
+          });
+        }
+      });
+
+      // Sort by difference descending
+      differenceList.sort((a, b) => b.difference - a.difference);
+      setDifferenceLeaderboard(differenceList);
+    } catch (e) {
+      setError(e.message);
+      console.error('Error:', e);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Fetch data on mount
+  useEffect(() => {
+    fetchGuildData();
+  }, []);
+
+  return (
+    <div className="container mx-auto p-4 max-w-4xl bg-gray-900 dark:bg-gray-900" suppressHydrationWarning>
+      <h1 className="text-3xl font-bold text-center mb-6 text-white dark:text-gray-100">Guild XP Leaderboard</h1>
+
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center space-x-4">
+          <div className="flex items-center">
+            <input
+              type="checkbox"
+              id="unlock"
+              checked={isUnlocked}
+              onChange={(e) => setIsUnlocked(e.target.checked)}
+              className="mr-2"
+            />
+            <label htmlFor="unlock" className="text-lg text-white dark:text-gray-100">Unlock Leaderboard</label>
+          </div>
+          {lastLockedTime && (
+            <span className="text-sm text-white dark:text-gray-300">
+              Last Locked: {lastLockedTime}
+            </span>
+          )}
+        </div>
+        <button
+          onClick={fetchGuildData}
+          disabled={isLoading}
+          className={`px-4 py-2 rounded-lg text-white ${isLoading ? 'bg-gray-400 cursor-not-allowed' : 'bg-blue-500 hover:bg-blue-600'}`}
+        >
+          {isLoading ? 'Loading...' : 'Refresh Leaderboards'}
+        </button>
+      </div>
+
+      {error && (
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+          Error: {error}
+        </div>
+      )}
+
+      <div className="flex flex-col md:flex-row md:space-x-4">
+        <LeaderboardTable
+          title="Current Leaderboard"
+          data={differenceLeaderboard}
+          columns={[
+            { key: 'username', label: 'Username' },
+            { key: 'difference', label: 'XP Difference' },
+          ]}
+        />
+        <LeaderboardTable
+          title="Difference Leaderboard"
+          data={currentLeaderboard}
+          columns={[
+            { key: 'username', label: 'Username' },
+            { key: 'xp', label: 'XP' },
+          ]}
+        />
+      </div>
+    </div>
+  );
+}
