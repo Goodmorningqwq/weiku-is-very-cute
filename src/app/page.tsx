@@ -1,23 +1,26 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { LeaderboardTable } from '@/component/LeaderboardTable'; //now u see its fixed and we can head to the next problem
-// and the reason it being error here becuase u didnt have the file saaaved, so the function isnt can u let me finishin my typing :<
-// so the function isnt getting recognized by the 
-// the error u see here is mainly cause by they cant find the r"LeaderboardTable " thing in the file
-// why?
-// so thats why i asked the equestion 2 for u tto export it, the reason i say its simple because u can easily find how by reading ur code
-//u see that? how do u have the roll down thing
-// ok so a knowledge for u cuz u prob dont know
-// a root path for a react/nextjs project uses @/
+import { LeaderboardTable } from '@/component/LeaderboardTable';
+
+// Interfaces for typing
+interface Member {
+  username: string;
+  xp: number;
+}
+
+interface DifferenceMember {
+  username: string;
+  difference: number;
+}
 
 export default function HomePage() {
   const [isUnlocked, setIsUnlocked] = useState(false);
-  const [currentLeaderboard, setCurrentLeaderboard] = useState([]);
-  const [lockedLeaderboard, setLockedLeaderboard] = useState([]);
-  const [differenceLeaderboard, setDifferenceLeaderboard] = useState([]);
-  const [lastLockedTime, setLastLockedTime] = useState(null);
-  const [error, setError] = useState(null);
+  const [currentLeaderboard, setCurrentLeaderboard] = useState<Member[]>([]);
+  const [lockedLeaderboard, setLockedLeaderboard] = useState<Member[]>([]);
+  const [differenceLeaderboard, setDifferenceLeaderboard] = useState<DifferenceMember[]>([]);
+  const [lastLockedTime, setLastLockedTime] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
   // Load locked leaderboard and last locked time from localStorage on mount
@@ -25,20 +28,13 @@ export default function HomePage() {
     const savedLocked = localStorage.getItem('lockedLeaderboard');
     const savedTime = localStorage.getItem('lastLockedTime');
     if (savedLocked) {
-      setLockedLeaderboard(JSON.parse(savedLocked));
+      setLockedLeaderboard(JSON.parse(savedLocked) as Member[]);
     }
     if (savedTime) {
       setLastLockedTime(new Date(parseInt(savedTime)).toLocaleString());
     }
   }, []);
-  
-  //u see its failed to fetch right?
-  // so we need to figure out the reason
-  //here we see its getting cors error
-  // what is a cors?
-  // in a short words, its like, u cant make user request the api directly from browser
-  // so how do i usually fix this is, making a local endpoint of server for the api to redirect
-  //ok so all the errors beleow are about incautious type definition, we can fix it lateron, lets check if the site is working now
+
   const fetchGuildData = async () => {
     setIsLoading(true);
     setError(null);
@@ -52,15 +48,16 @@ export default function HomePage() {
       if (!members || members.total === 0) {
         throw new Error('No members found in guild');
       }
-      // 
+
       // Process members, handling duplicates
-      const memberDict = {};
-      const ranks = ['owner', 'chief', 'strategist', 'captain', 'recruiter', 'recruit'];
+      const memberDict: Record<string, Member> = {};
+      const ranks = ['owner', 'chief', 'strategist', 'captain', 'recruiter', 'recruit'] as const;
+
       ranks.forEach((rank) => {
         if (members[rank]) {
           Object.keys(members[rank]).forEach((memberKey) => {
             const memberData = members[rank][memberKey];
-            const username = memberData[memberKey] || memberKey;
+            const username = memberKey;
             const xp = Number(memberData.contributed) || 0;
             if (memberDict[username]) {
               console.warn(`Duplicate username ${username}: ${memberDict[username].xp}, ${xp}`);
@@ -73,7 +70,7 @@ export default function HomePage() {
       });
 
       // Convert to array and sort by XP descending
-      const newCurrentLeaderboard = Object.values(memberDict).sort((a, b) => b.xp - a.xp);
+      const newCurrentLeaderboard: Member[] = Object.values(memberDict).sort((a, b) => b.xp - a.xp);
       setCurrentLeaderboard(newCurrentLeaderboard);
 
       // Update locked leaderboard if unlocked
@@ -86,12 +83,12 @@ export default function HomePage() {
       }
 
       // Calculate difference leaderboard
-      const lockedDict = {};
+      const lockedDict: Record<string, number> = {};
       lockedLeaderboard.forEach((member) => {
         lockedDict[member.username] = member.xp;
       });
 
-      const differenceList = [];
+      const differenceList: DifferenceMember[] = [];
       newCurrentLeaderboard.forEach((member) => {
         const lockedXP = lockedDict[member.username] || 0;
         differenceList.push({
@@ -114,8 +111,10 @@ export default function HomePage() {
       differenceList.sort((a, b) => b.difference - a.difference);
       setDifferenceLeaderboard(differenceList);
     } catch (e) {
-      setError(e.message);
-      console.error('Error:', e);
+      if (e instanceof Error) {
+        setError(e.message);
+        console.error('Error:', e);
+      }
     } finally {
       setIsLoading(false);
     }
