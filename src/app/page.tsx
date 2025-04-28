@@ -128,7 +128,7 @@ export default function HomePage() {
   return (
     <div className="container mx-auto p-4 max-w-4xl bg-gray-900 dark:bg-gray-900" suppressHydrationWarning>
       <h1 className="text-3xl font-bold text-center mb-6 text-white dark:text-gray-100">Guild XP Leaderboard</h1>
-      <span className='text-3xl text-cyan-500 hover:text-cyan-700 transition-all duration-150'>weiku is very cute</span>
+      <span className='text-3xl text-cyan-500 hover:text-cyan-700 transition-all duration-150'>weiku is very cute yes</span>
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center space-x-4">
           <div className="flex items-center">
