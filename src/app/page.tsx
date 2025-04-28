@@ -136,7 +136,7 @@ export default function HomePage() {
     <div className="flex flex-col items-center justify-center min-h-screen p-4 bg-gray-900 dark:bg-gray-900" suppressHydrationWarning>
       <div className="w-full max-w-2xl flex flex-col items-center text-center">
         <h1 className="text-4xl font-bold mb-6 text-white dark:text-gray-100">
-          Guild Weekly XP Difference
+          Ruwr Weekly XP LeaderBoard
         </h1>
   
         <div className="flex flex-col items-center mb-6 text-white dark:text-gray-300 space-y-2">
@@ -154,7 +154,7 @@ export default function HomePage() {
           <div className="text-center text-white">Loading...</div>
         ) : (
           <LeaderboardTable
-            title="Weekly XP Difference"
+            title="Weekly XP LeaderBoard"
             data={differenceLeaderboard}
             columns={[
               { key: 'username', label: 'Username' },
