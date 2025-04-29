@@ -18,16 +18,20 @@ export const StarField = ({ maxStars = 5 }: { maxStars?: number }) => {
   const lastStarTime = useRef(0);
   const starCount = useRef(0);
 
+  const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+  const effectiveMaxStars = isMobile ? Math.min(maxStars, 3) : maxStars; // fewer stars on mobile
+  const maxTrailLength = isMobile ? 10 : 20;
+
   const generateShootingStar = (id: number): Star => {
-    const speed = Math.random() * 2 + 6; // 6–8 px/frame
-    const brightness = Math.min(1, speed / 8); // Faster stars look brighter
-    const angle = Math.random() * Math.PI/3; // ~36°–108°
+    const speed = Math.random() * 2 + 6;
+    const brightness = Math.min(1, speed / 8);
+    const angle = Math.random() * (Math.PI / 3);
 
     return {
       id,
       x: Math.random() * window.innerWidth,
       y: -10,
-      size: Math.random() * 3 + 2, // 2–5px
+      size: Math.random() * 3 + 2,
       speed,
       angle,
       brightness,
@@ -52,10 +56,10 @@ export const StarField = ({ maxStars = 5 }: { maxStars?: number }) => {
 
   useEffect(() => {
     let animationFrameId: number;
-    const spawnDelay = 1000;
+    const spawnDelay = isMobile ? 1500 : 1000;
 
     const updateStars = (time: number) => {
-      if (starCount.current < maxStars && time - lastStarTime.current > spawnDelay) {
+      if (starCount.current < effectiveMaxStars && time - lastStarTime.current > spawnDelay) {
         setStars(prev => [...prev, generateShootingStar(Date.now())]);
         starCount.current += 1;
         lastStarTime.current = time;
@@ -81,7 +85,7 @@ export const StarField = ({ maxStars = 5 }: { maxStars?: number }) => {
               opacity: pos.opacity * 0.9,
               size: pos.size * 0.97,
             })),
-          ].slice(0, 20);
+          ].slice(0, maxTrailLength);
 
           if (
             newY > window.innerHeight * 1.2 ||
@@ -105,13 +109,12 @@ export const StarField = ({ maxStars = 5 }: { maxStars?: number }) => {
 
     animationFrameId = requestAnimationFrame(updateStars);
     return () => cancelAnimationFrame(animationFrameId);
-  }, [maxStars]);
+  }, [effectiveMaxStars, isMobile]);
 
   return (
     <div className="fixed inset-0 z-0 overflow-hidden pointer-events-none">
       {stars.map(star => (
         <React.Fragment key={star.id}>
-          {/* Trail */}
           {star.trail.map((pos, i) => (
             <div
               key={`${star.id}-${i}`}
@@ -124,12 +127,11 @@ export const StarField = ({ maxStars = 5 }: { maxStars?: number }) => {
                 opacity: pos.opacity,
                 transform: 'translate(-50%, -50%)',
                 backgroundColor: 'white',
-                filter: 'blur(1px)',
+                filter: 'blur(0.8px)',
                 willChange: 'transform, opacity',
               }}
             />
           ))}
-          {/* Head */}
           <div
             className="absolute rounded-full"
             style={{

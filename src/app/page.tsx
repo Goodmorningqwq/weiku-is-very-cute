@@ -105,7 +105,7 @@ export default function HomePage() {
   return (
     <div className="relative min-h-screen w-full overflow-hidden bg-black text-white">
       {/* ✅ Fix: use correct prop 'maxStars' */}
-      <StarField maxStars={15} />
+      <StarField maxStars={10} />
 
       <main className="relative z-10 flex flex-col items-center justify-center min-h-screen p-4">
         <div className="w-full max-w-2xl flex flex-col items-center text-center rounded-2xl shadow-2xl bg-white/10 backdrop-blur-lg border border-white/10 p-6">
