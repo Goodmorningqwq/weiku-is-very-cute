@@ -7,6 +7,7 @@ interface Member {
   username: string;
   xp: number;
 }
+
 interface DifferenceMember {
   username: string;
   difference: number;
@@ -50,27 +51,35 @@ export default function HomePage() {
       const current = Object.values(memberDict).sort((a, b) => b.xp - a.xp);
       setCurrentLeaderboard(current);
 
-      // Server call to get or update locked leaderboard
+      // Server call to get/update locked leaderboard
       const lockRes = await fetch('/api/leaderboard', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ leaderboard: current }),
       });
+
+      if (!lockRes.ok) {
+        const text = await lockRes.text();
+        throw new Error(`Leaderboard API error: ${text}`);
+      }
+
       const { lockedLeaderboard, lastLockedTime } = await lockRes.json();
       setLockedLeaderboard(lockedLeaderboard);
       setLastLockedTime(lastLockedTime);
       setLastUpdatedTime(Date.now());
 
-      // Compute XP diff
+      // Compute XP difference
       const lockedMap: Record<string, number> = {};
-      lockedLeaderboard.forEach((m) => (lockedMap[m.username] = m.xp));
+      lockedLeaderboard.forEach((m: Member) => {
+        lockedMap[m.username] = m.xp;
+      });
 
-      const diffList: DifferenceMember[] = current.map((m) => ({
+      const diffList: DifferenceMember[] = current.map((m: Member) => ({
         username: m.username,
         difference: m.xp - (lockedMap[m.username] || 0),
       }));
 
-      lockedLeaderboard.forEach((m) => {
+      lockedLeaderboard.forEach((m: Member) => {
         if (!memberDict[m.username]) {
           diffList.push({ username: m.username, difference: -m.xp });
         }
