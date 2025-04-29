@@ -23,7 +23,7 @@ export default function HomePage() {
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  // 1. Load locked leaderboard and last locked time from localStorage
+  // Load from localStorage
   useEffect(() => {
     const savedLocked = localStorage.getItem('lockedLeaderboard');
     const savedTime = localStorage.getItem('lastLockedTime');
@@ -35,7 +35,7 @@ export default function HomePage() {
     }
   }, []);
 
-  // 2. After loading localStorage, fetch guild data
+  // After loading time, fetch data
   useEffect(() => {
     if (lastLockedTime !== null) {
       fetchGuildData();
@@ -57,7 +57,6 @@ export default function HomePage() {
         throw new Error('No members found in guild');
       }
 
-      // Process members
       const memberDict: Record<string, Member> = {};
       const ranks = ['owner', 'chief', 'strategist', 'captain', 'recruiter', 'recruit'] as const;
 
@@ -82,7 +81,6 @@ export default function HomePage() {
       const now = Date.now();
       const oneWeekMs = 7 * 24 * 60 * 60 * 1000;
 
-      // Check if 7 days have passed
       if (!lastLockedTime || now - lastLockedTime >= oneWeekMs) {
         setLockedLeaderboard(newCurrentLeaderboard);
         localStorage.setItem('lockedLeaderboard', JSON.stringify(newCurrentLeaderboard));
@@ -90,7 +88,6 @@ export default function HomePage() {
         setLastLockedTime(now);
       }
 
-      // Build difference leaderboard
       const lockedDict: Record<string, number> = {};
       lockedLeaderboard.forEach((member) => {
         lockedDict[member.username] = member.xp;
@@ -128,7 +125,6 @@ export default function HomePage() {
     }
   };
 
-  // Helper: format date
   const formatDate = (timestamp: number | null) => {
     if (!timestamp) return 'Unknown';
     return new Date(timestamp).toLocaleString();
@@ -138,13 +134,25 @@ export default function HomePage() {
     <div className="flex flex-col items-center justify-center min-h-screen p-4 bg-gray-900 dark:bg-gray-900" suppressHydrationWarning>
       <div className="w-full max-w-2xl flex flex-col items-center text-center">
         <h1 className="text-4xl font-bold mb-6 text-white dark:text-gray-100">
-          Ruwr members Guild Weekly XP 
+          Ruwr members Guild Weekly XP
         </h1>
 
-        <div className="flex flex-col items-center mb-6 text-white dark:text-gray-300 space-y-2">
+        <div className="flex flex-col items-center mb-4 text-white dark:text-gray-300 space-y-2">
           <p><strong>Last Weekly Reset:</strong> {formatDate(lastLockedTime)}</p>
           <p><strong>Last Updated:</strong> {formatDate(lastUpdatedTime)}</p>
         </div>
+
+        <button
+          onClick={fetchGuildData}
+          disabled={isLoading}
+          className={`mb-6 px-4 py-2 rounded-lg text-white font-medium transition-colors duration-150 ${
+            isLoading
+              ? 'bg-gray-500 cursor-not-allowed'
+              : 'bg-blue-600 hover:bg-blue-700'
+          }`}
+        >
+          {isLoading ? 'Refreshing...' : 'Refresh Leaderboard'}
+        </button>
 
         {error && (
           <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
