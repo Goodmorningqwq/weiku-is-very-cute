@@ -1,83 +1,87 @@
 import { useState } from "react";
 
-// Type for a single column
 interface Column {
   key: string;
   label: string;
 }
 
-// Props for LeaderboardTable
-interface LeaderboardTableProps {
+interface Row {
+  [key: string]: string | number;
+}
+
+interface Props {
   title: string;
-  data: Record<string, any>[]; // or you can make this stricter if needed
+  data: Row[];
   columns: Column[];
 }
 
-interface SortConfig {
-  key: string;
-  direction: 'ascending' | 'descending';
-}
-
-export function LeaderboardTable({ title, data, columns }: LeaderboardTableProps) {
-  const [sortConfig, setSortConfig] = useState<SortConfig>({
-    key: columns[1]?.key ?? columns[0]?.key ?? '', // fallback if columns array is weird
+export function LeaderboardTable({ title, data, columns }: Props) {
+  const [sortConfig, setSortConfig] = useState({
+    key: columns[1].key,
     direction: 'descending',
   });
 
   const sortedData = [...data].sort((a, b) => {
-    if (a[sortConfig.key] < b[sortConfig.key]) {
-      return sortConfig.direction === 'ascending' ? -1 : 1;
-    }
-    if (a[sortConfig.key] > b[sortConfig.key]) {
-      return sortConfig.direction === 'ascending' ? 1 : -1;
+    const aVal = a[sortConfig.key];
+    const bVal = b[sortConfig.key];
+    if (typeof aVal === 'number' && typeof bVal === 'number') {
+      return sortConfig.direction === 'ascending' ? aVal - bVal : bVal - aVal;
     }
     return 0;
   });
 
   const handleSort = (key: string) => {
-    setSortConfig((prev) => ({
+    setSortConfig(prev => ({
       key,
       direction: prev.key === key && prev.direction === 'ascending' ? 'descending' : 'ascending',
     }));
   };
 
   return (
-    <div className="mb-8 w-full max-w-md">
-      <h2 className="text-xl font-bold mb-2 text-white dark:text-gray-100">{title}</h2>
-      <table className="min-w-full bg-white dark:bg-gray-800 border rounded-lg shadow-md">
-        <thead>
-          <tr className="bg-gray-300 dark:bg-gray-700">
-            {columns.map((col) => (
-              <th
-                key={col.key}
-                className="py-2 px-4 border-b cursor-pointer hover:bg-gray-400 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200"
-                onClick={() => handleSort(col.key)}
-              >
-                {col.label} {sortConfig.key === col.key ? (sortConfig.direction === 'ascending' ? '↑' : '↓') : ''}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {sortedData.length === 0 ? (
+    <div className="w-full">
+      <h2 className="text-2xl font-semibold text-white mb-4">{title}</h2>
+      <div className="overflow-x-auto rounded-xl border border-white/10 shadow">
+        <table className="min-w-full table-auto border-collapse bg-black/30 text-white">
+          <thead className="bg-white/10 backdrop-blur text-white">
             <tr>
-              <td colSpan={columns.length} className="py-2 px-4 text-center text-gray-900 dark:text-gray-100">
-                No data available
-              </td>
+              {columns.map(col => (
+                <th
+                  key={col.key}
+                  onClick={() => handleSort(col.key)}
+                  className="px-4 py-3 text-left font-semibold cursor-pointer hover:text-blue-300"
+                >
+                  {col.label}
+                  {sortConfig.key === col.key && (
+                    <span className="ml-1">{sortConfig.direction === 'ascending' ? '↑' : '↓'}</span>
+                  )}
+                </th>
+              ))}
             </tr>
-          ) : (
-            sortedData.map((row, index) => (
-              <tr key={index} className="hover:bg-gray-200 dark:hover:bg-gray-700">
-                {columns.map((col) => (
-                  <td key={col.key} className="py-2 px-4 border-b text-gray-900 dark:text-gray-100">
-                    {row[col.key]}
-                  </td>
-                ))}
+          </thead>
+          <tbody>
+            {sortedData.length === 0 ? (
+              <tr>
+                <td colSpan={columns.length} className="px-4 py-4 text-center text-gray-400">
+                  No data available
+                </td>
               </tr>
-            ))
-          )}
-        </tbody>
-      </table>
+            ) : (
+              sortedData.map((row, index) => (
+                <tr
+                  key={index}
+                  className="hover:bg-white/10 transition-colors border-t border-white/10"
+                >
+                  {columns.map(col => (
+                    <td key={col.key} className="px-4 py-2">
+                      {row[col.key]}
+                    </td>
+                  ))}
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }

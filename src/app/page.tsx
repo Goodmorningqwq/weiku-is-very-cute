@@ -8,7 +8,9 @@ interface Member {
   xp: number;
 }
 
+// ✅ Add index signature to satisfy Table typing
 interface DifferenceMember {
+  [key: string]: string | number;
   username: string;
   difference: number;
 }
@@ -51,7 +53,6 @@ export default function HomePage() {
       const current = Object.values(memberDict).sort((a, b) => b.xp - a.xp);
       setCurrentLeaderboard(current);
 
-      // Server call to get/update locked leaderboard
       const lockRes = await fetch('/api/leaderboard', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -68,7 +69,6 @@ export default function HomePage() {
       setLastLockedTime(lastLockedTime);
       setLastUpdatedTime(Date.now());
 
-      // Compute XP difference
       const lockedMap: Record<string, number> = {};
       lockedLeaderboard.forEach((m: Member) => {
         lockedMap[m.username] = m.xp;
@@ -104,46 +104,54 @@ export default function HomePage() {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen p-4 bg-gray-900 dark:bg-gray-900">
-      <div className="w-full max-w-2xl flex flex-col items-center text-center">
-        <h1 className="text-4xl font-bold mb-6 text-white dark:text-gray-100">
-          Ruwr members Guild Weekly XP
-        </h1>
+    <div className="relative min-h-screen w-full bg-gradient-to-br from-gray-900 via-gray-800 to-black animate-bg-pan bg-[length:300%_300%] overflow-hidden">
+      {/* Animated glowing blur background */}
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_left,_var(--tw-gradient-stops))] from-pink-500/10 via-purple-500/10 to-blue-500/10 blur-3xl opacity-30 pointer-events-none" />
 
-        <div className="flex flex-col items-center mb-4 text-white dark:text-gray-300 space-y-2">
-          <p><strong>Last Weekly Reset:</strong> {formatDate(lastLockedTime)}</p>
-          <p><strong>Last Updated:</strong> {formatDate(lastUpdatedTime)}</p>
-        </div>
+      {/* Foreground content */}
+      <main className="relative z-10 flex flex-col items-center justify-center min-h-screen p-4">
+        <div className="w-full max-w-2xl flex flex-col items-center text-center rounded-2xl shadow-2xl bg-white/10 backdrop-blur-lg border border-white/10 p-6">
+          <h1 className="text-4xl font-bold mb-6 animate-pulse bg-gradient-to-r from-cyan-400 via-pink-400 to-purple-400 bg-clip-text text-transparent drop-shadow-lg">
+            ✨ Ruwr Guild Weekly XP ✨
+          </h1>
 
-        <button
-          onClick={fetchGuildData}
-          disabled={isLoading}
-          className={`mb-6 px-4 py-2 rounded-lg text-white font-medium transition-colors duration-150 ${
-            isLoading
-              ? 'bg-gray-500 cursor-not-allowed'
-              : 'bg-blue-600 hover:bg-blue-700'
-          }`}
-        >
-          {isLoading ? 'Refreshing...' : 'Refresh Leaderboard'}
-        </button>
-
-        {error && (
-          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-            Error: {error}
+          <div className="flex flex-col items-center mb-4 text-white space-y-2">
+            <p><strong>Last Weekly Reset:</strong> {formatDate(lastLockedTime)}</p>
+            <p><strong>Last Updated:</strong> {formatDate(lastUpdatedTime)}</p>
           </div>
-        )}
 
-        {!isLoading && (
-          <LeaderboardTable
-            title="Weekly XP Leaderboard"
-            data={differenceLeaderboard}
-            columns={[
-              { key: 'username', label: 'Username' },
-              { key: 'difference', label: 'XP Gained' },
-            ]}
-          />
-        )}
-      </div>
+          <button
+            onClick={fetchGuildData}
+            disabled={isLoading}
+            className={`mb-6 px-4 py-2 rounded-xl text-white font-medium transition-all duration-150 ${
+              isLoading
+                ? 'bg-gray-500 cursor-not-allowed'
+                : 'bg-gradient-to-r from-blue-500 to-violet-500 hover:from-blue-600 hover:to-violet-600'
+            }`}
+          >
+            {isLoading ? 'Refreshing...' : 'Refresh Leaderboard'}
+          </button>
+
+          {error && (
+            <div className="bg-red-200/90 border border-red-400 text-red-800 px-4 py-3 rounded-xl mb-4">
+              Error: {error}
+            </div>
+          )}
+
+          {!isLoading && (
+            <div className="w-full rounded-2xl border border-white/10 shadow-lg backdrop-blur-sm p-4 bg-white/5">
+              <LeaderboardTable
+                title="Weekly XP Leaderboard"
+                data={differenceLeaderboard}
+                columns={[
+                  { key: 'username', label: 'Username' },
+                  { key: 'difference', label: 'XP Gained' },
+                ]}
+              />
+            </div>
+          )}
+        </div>
+      </main>
     </div>
   );
 }
