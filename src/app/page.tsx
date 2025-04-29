@@ -3,12 +3,10 @@
 import { useState, useEffect } from 'react';
 import { LeaderboardTable } from '@/component/LeaderboardTable';
 
-// Interfaces
 interface Member {
   username: string;
   xp: number;
 }
-
 interface DifferenceMember {
   username: string;
   difference: number;
@@ -23,49 +21,23 @@ export default function HomePage() {
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Load from localStorage
-  useEffect(() => {
-    const savedLocked = localStorage.getItem('lockedLeaderboard');
-    const savedTime = localStorage.getItem('lastLockedTime');
-    if (savedLocked) {
-      setLockedLeaderboard(JSON.parse(savedLocked) as Member[]);
-    }
-    if (savedTime) {
-      setLastLockedTime(parseInt(savedTime));
-    }
-  }, []);
-
-  // After loading time, fetch data
-  useEffect(() => {
-    if (lastLockedTime !== null) {
-      fetchGuildData();
-    }
-  }, [lastLockedTime]);
-
-  // Fetch guild data
   const fetchGuildData = async () => {
     setIsLoading(true);
     setError(null);
     try {
-      const response = await fetch('/api/guild');
-      if (!response.ok) {
-        throw new Error('API call failed');
-      }
-      const data = await response.json();
+      const res = await fetch('/api/guild');
+      if (!res.ok) throw new Error('Failed to fetch guild data');
+      const data = await res.json();
       const members = data.members;
-      if (!members || members.total === 0) {
-        throw new Error('No members found in guild');
-      }
 
       const memberDict: Record<string, Member> = {};
       const ranks = ['owner', 'chief', 'strategist', 'captain', 'recruiter', 'recruit'] as const;
 
       ranks.forEach((rank) => {
         if (members[rank]) {
-          Object.keys(members[rank]).forEach((memberKey) => {
-            const memberData = members[rank][memberKey];
-            const username = memberKey;
-            const xp = Number(memberData.contributed) || 0;
+          Object.keys(members[rank]).forEach((key) => {
+            const xp = Number(members[rank][key].contributed || 0);
+            const username = key;
             if (memberDict[username]) {
               memberDict[username].xp = Math.max(memberDict[username].xp, xp);
             } else {
@@ -75,55 +47,47 @@ export default function HomePage() {
         }
       });
 
-      const newCurrentLeaderboard: Member[] = Object.values(memberDict).sort((a, b) => b.xp - a.xp);
-      setCurrentLeaderboard(newCurrentLeaderboard);
+      const current = Object.values(memberDict).sort((a, b) => b.xp - a.xp);
+      setCurrentLeaderboard(current);
 
-      const now = Date.now();
-      const oneWeekMs = 7 * 24 * 60 * 60 * 1000;
-
-      if (!lastLockedTime || now - lastLockedTime >= oneWeekMs) {
-        setLockedLeaderboard(newCurrentLeaderboard);
-        localStorage.setItem('lockedLeaderboard', JSON.stringify(newCurrentLeaderboard));
-        localStorage.setItem('lastLockedTime', now.toString());
-        setLastLockedTime(now);
-      }
-
-      const lockedDict: Record<string, number> = {};
-      lockedLeaderboard.forEach((member) => {
-        lockedDict[member.username] = member.xp;
+      // Server call to get or update locked leaderboard
+      const lockRes = await fetch('/api/leaderboard', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ leaderboard: current }),
       });
+      const { lockedLeaderboard, lastLockedTime } = await lockRes.json();
+      setLockedLeaderboard(lockedLeaderboard);
+      setLastLockedTime(lastLockedTime);
+      setLastUpdatedTime(Date.now());
 
-      const differenceList: DifferenceMember[] = [];
-      newCurrentLeaderboard.forEach((member) => {
-        const lockedXP = lockedDict[member.username] || 0;
-        differenceList.push({
-          username: member.username,
-          difference: member.xp - lockedXP,
-        });
-      });
+      // Compute XP diff
+      const lockedMap: Record<string, number> = {};
+      lockedLeaderboard.forEach((m) => (lockedMap[m.username] = m.xp));
 
-      lockedLeaderboard.forEach((member) => {
-        if (!memberDict[member.username]) {
-          differenceList.push({
-            username: member.username,
-            difference: -member.xp,
-          });
+      const diffList: DifferenceMember[] = current.map((m) => ({
+        username: m.username,
+        difference: m.xp - (lockedMap[m.username] || 0),
+      }));
+
+      lockedLeaderboard.forEach((m) => {
+        if (!memberDict[m.username]) {
+          diffList.push({ username: m.username, difference: -m.xp });
         }
       });
 
-      differenceList.sort((a, b) => b.difference - a.difference);
-      setDifferenceLeaderboard(differenceList);
-
-      setLastUpdatedTime(now);
+      diffList.sort((a, b) => b.difference - a.difference);
+      setDifferenceLeaderboard(diffList);
     } catch (e) {
-      if (e instanceof Error) {
-        setError(e.message);
-        console.error('Error:', e);
-      }
+      if (e instanceof Error) setError(e.message);
     } finally {
       setIsLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchGuildData();
+  }, []);
 
   const formatDate = (timestamp: number | null) => {
     if (!timestamp) return 'Unknown';
@@ -131,7 +95,7 @@ export default function HomePage() {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen p-4 bg-gray-900 dark:bg-gray-900" suppressHydrationWarning>
+    <div className="flex flex-col items-center justify-center min-h-screen p-4 bg-gray-900 dark:bg-gray-900">
       <div className="w-full max-w-2xl flex flex-col items-center text-center">
         <h1 className="text-4xl font-bold mb-6 text-white dark:text-gray-100">
           Ruwr members Guild Weekly XP
@@ -160,9 +124,7 @@ export default function HomePage() {
           </div>
         )}
 
-        {isLoading ? (
-          <div className="text-center text-white">Loading...</div>
-        ) : (
+        {!isLoading && (
           <LeaderboardTable
             title="Weekly XP Leaderboard"
             data={differenceLeaderboard}
