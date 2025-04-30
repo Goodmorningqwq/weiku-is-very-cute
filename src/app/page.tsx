@@ -103,9 +103,13 @@ export default function HomePage() {
   };
 
   return (
-    <div className="relative min-h-screen w-full overflow-hidden bg-black text-white">
-      {/* ✅ Fix: use correct prop 'maxStars' */}
-      <StarField maxStars={10} />
+    <div
+      className="relative min-h-screen w-full overflow-hidden text-white bg-cover bg-center bg-fixed"
+      style={{ backgroundImage: "url('https://img.freepik.com/premium-vector/night-landscape-scene-with-full-moon-clouds-vector-illustration_263779-1357.jpg?semt=ais_hybrid&w=740')", backgroundSize: 'contain', backgroundPosition: '20% center',  }}
+    >
+      {/* Dark overlay */}
+      <div className="absolute inset-0 bg-black/50 z-0" />
+      <StarField maxStars={8} />
 
       <main className="relative z-10 flex flex-col items-center justify-center min-h-screen p-4">
         <div className="w-full max-w-2xl flex flex-col items-center text-center rounded-2xl shadow-2xl bg-white/10 backdrop-blur-lg border border-white/10 p-6">
