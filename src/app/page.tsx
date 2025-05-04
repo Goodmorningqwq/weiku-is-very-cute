@@ -72,7 +72,7 @@ export default function Home() {
       <section className="text-center mb-10">
         <h2 className="text-4xl font-bold mb-4">Welcome to the Cat Society</h2>
         <p className="text-lg text-white/70 italic">
-          "Together we rise, stronger every day!!"
+          "Together we Ruwr, stronger every day!!"
         </p>
       </section>
 
