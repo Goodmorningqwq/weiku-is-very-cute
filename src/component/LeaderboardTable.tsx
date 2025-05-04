@@ -20,7 +20,7 @@ export const LeaderboardTable: React.FC<LeaderboardTableProps> = ({ columns, dat
   });
 
   return (
-    <div className="overflow-x-auto rounded-xl bg-black bg-opacity-70 backdrop-blur-md p-4 shadow-lg">
+    <div className="overflow-x-auto rounded-xl bg-black/30 bg-opacity-70 backdrop-blur-md p-4 shadow-lg">
       <table className="min-w-full table-auto">
         <thead>
           <tr>
